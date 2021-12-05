@@ -10,12 +10,20 @@ public sealed interface Problem
 		ExpectingBinary,
 		ExpectingFloat,
 		ExpectingEnd,
-		ExpectingVariable {
+		ExpectingVariable,
+		ExpectingSymbol,
+		ExpectingKeyword,
+		UnexpectedCharacter {
 
 	/**
 	 * The {@link ExpectingInt} problem.
 	 */
 	Problem EXPECTING_INT = new ExpectingInt();
+
+	/**
+	 * The {@link UnexpectedCharacter} problem.
+	 */
+	Problem UNEXPECTED_CHARACTER = new UnexpectedCharacter();
 
 	/**
 	 * The {@link ExpectingHex} problem.
@@ -60,5 +68,25 @@ public sealed interface Problem
 	 */
 	static Problem expecting(final String expecting) {
 		return new Expecting(expecting);
+	}
+
+	/**
+	 * Creates a problem indicating a symbol that is expected.
+	 *
+	 * @param expecting a description of the symbol that is expected.
+	 * @return an {@link ExpectingSymbol} with a description of the expected symbol
+	 */
+	static Problem expectingSymbol(final String expecting) {
+		return new ExpectingSymbol(expecting);
+	}
+
+	/**
+	 * Creates a problem indicating a keyword that is expected.
+	 *
+	 * @param keyword a description of the keyword that is expected.
+	 * @return an {@link ExpectingSymbol} with a description of the expected keyword
+	 */
+	static Problem expectingKeyword(final String keyword) {
+		return new ExpectingKeyword(keyword);
 	}
 }

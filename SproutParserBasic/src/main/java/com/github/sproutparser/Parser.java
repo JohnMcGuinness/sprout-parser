@@ -4,14 +4,16 @@ import com.github.sproutparser.common.AbstractParser;
 import com.github.sproutparser.common.Err;
 import com.github.sproutparser.common.Ok;
 import com.github.sproutparser.common.PStep;
+import com.github.sproutparser.common.ParserImpl;
+import com.github.sproutparser.common.Position;
 import com.github.sproutparser.common.Result;
 import com.github.sproutparser.common.State;
-import com.github.sproutparser.common.ParserImpl;
 import com.github.sproutparser.common.Token;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -180,6 +182,18 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	}
 
 	/**
+	 * This parser will keep trying parsers until {@code oneOf} them starts chomping characters. Once a path is chosen,
+	 * it does not come back and try the others.
+	 *
+	 * @param parsers the {@link Parser parsers} to try
+	 * @param <T>
+	 * @return a {@link Parser} that keeps trying parsers until one of them starts chomping
+	 */
+	public static <T> Parser<T> oneOf(final Parser<T>... parsers) {
+		return new Parser<>(ParserImpl.oneOfF(List.of(parsers)));
+	}
+
+	/**
 	 * Helper to define recursive parsers.
 	 *
 	 * @param thunk
@@ -194,17 +208,45 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * Parse exactly the given string, without any regard to what comes next.
 	 *
 	 * @param token the string to parse
-	 * @return a {@link Parser} that parses the given {@link String}
+	 * @return a {@link Parser} that parses the given token
 	 */
 	public static Parser<Void> token(final String token) {
 		return new Parser<>(ParserImpl.tokenF(new Token<>(token, new Expecting(token))));
 	}
 
 	/**
+	 * Parse keywords like {@code if}, {@code class}, and {@code switch}.
+	 * @param keyword the keyword to parse
+	 * @return a {@link Parser} that parses the given keyword
+	 */
+	public static Parser<Void> keyword(final String keyword) {
+		return new Parser<>(ParserImpl.keywordF(toToken(keyword, Problem.expectingKeyword(keyword))));
+	}
+
+	/**
+	 * Parse symbols like {@code (} and {@code ,}.
+	 * @param string the symbol
+	 * @return a {@link Parser} that parses the given symbol
+	 */
+	public static Parser<Void> symbol(final String string) {
+		return new Parser<>(ParserImpl.tokenF(new Token<>(string, Problem.expectingSymbol(string))));
+	}
+
+	/**
+	 *
+	 * @param parser
+	 * @param <T> the type of the result of successful parsing
+	 * @return a
+	 */
+	public static <T> Parser<T> backtrackable(final Parser<T> parser) {
+		return new Parser<>(ParserImpl.backtrackableF(parser));
+	}
+
+	/**
 	 * Parse zero or more ' ', '\n' or '\r' characters.
 	 * <p>
 	 * If you need something different (like tabs) just define an alternative with the necessary tweaks! Check out
-	 * {@link lineComment} and {@link multiComment} for more complex situations.
+	 * {@link Parser#lineComment} and {@link Parser#multiComment} for more complex situations.
 	 *
 	 * @return a Parser that parses spaces.
 	 */
@@ -267,9 +309,10 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 
 	/**
 	 * Create a parser for variables.
-	 * @param start
-	 * @param inner
-	 * @param reserved
+	 *
+	 * @param start the {@link Predicate} that defines characters that are allowed as the first character
+	 * @param inner the {@link Predicate} that defines allowed characters, except for the first character
+	 * @param reserved the {@link Set} of reserved words
 	 * @return a {@link Parser} of variables
 	 */
 	public static Parser<String> variable(
@@ -280,7 +323,113 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 		return new Parser<>(ParserImpl.variableF(start, inner, reserved, Problem.EXPECTING_VARIABLE));
 	}
 
-	private static Token<Problem> toToken(final String str) {
-		return new Token<>(str, Problem.expecting(str));
+	public static <T1, T2> Parser<T1> ignore(final Parser<T1> keep, final Parser<T2> ignore) {
+		return new Parser<>(ParserImpl.ignoreF(keep, ignore));
+	}
+
+	/**
+	 * Parse single-line comments.
+	 * @param str the string that starts a single line comment
+	 * @return a {@link Parser} of single line comments
+	 */
+	public static Parser<Void> lineComment(final String str) {
+		return ignore(token(str), chompUntilEndOr("\n"));
+	}
+
+	/**
+	 * Chomp until you see a certain string or until you run out of characters to chomp.
+	 *
+	 * @param str the {@link String} that causes parsing to stop.
+	 * @return a {@link Parser} that chomps until you see a certain string or until you run out of characters to chomp.
+	 */
+	public static Parser<Void> chompUntilEndOr(final String str) {
+		return new Parser<>(ParserImpl.chompUntilEndOrF(str));
+	}
+
+	private static Token<Problem> toToken(final String str, final Problem problem) {
+		return new Token<>(str, problem);
+	}
+
+	/**
+	 * This works just like {@link Parser#getChompedString} but gives a bit more flexibility.
+	 * <p>
+	 *
+	 * @param f
+	 * @param parser
+	 * @param <T1>
+	 * @param <T2>
+	 * @return
+	 */
+	public static <T1, T2> Parser<T2> mapChompedString(final BiFunction<String, T1, T2> f, final Parser<T1> parser) {
+		return new Parser<>(ParserImpl.mapChompedStringF(f, parser));
+	}
+
+	/**
+	 * Extracts that part of the input source that was parsed by {@code parser}.
+	 *
+	 * @param parser
+	 * @param <T> the type of the result of successful parsing
+	 * @return a {@link Parser} that extracts the source parsed by {@code parser}
+	 */
+	public static <T> Parser<String> getChompedString(final Parser<T> parser) {
+		return mapChompedString((a, b) -> a, parser);
+	}
+
+	/**
+	 * Chomp one character if it passes the test.
+	 *
+	 * @param isGood the predicate that decides if the character gets chomped
+	 * @return a {@link Parser} that chomps a single specific character
+	 */
+	public static Parser<Void> chompIf(final Predicate<Integer> isGood) {
+		return new Parser<>(ParserImpl.chompIfF(isGood, Problem.UNEXPECTED_CHARACTER));
+	}
+
+	/**
+	 * Chomp zero or more characters if they pass the test.
+	 *
+	 * @param isGood the predicate that tests if characters should be chomped
+	 * @return a {@link Parser} that chomps characters while the {@link Predicate} is satisfied
+	 */
+	public static Parser<Void> chompWhile(final Predicate<Integer> isGood) {
+		return new Parser<>(ParserImpl.chompWhile(isGood));
+	}
+
+	/**
+	 * Chomp until you see a certain string.
+	 *
+	 * @param str the {@link String} that will cause parsing to stop
+	 * @return a {@link Parser} that chomps until it encounters a given string
+	 */
+	public static Parser<Void> chompUntil(final String str) {
+		return new Parser<>(ParserImpl.chompUntilF(toToken(str, Problem.expecting(str))));
+	}
+
+	public static Parser<Position> getPosition() {
+		return new Parser<>(ParserImpl.getPositionF());
+	}
+
+	public static Parser<Integer> getRow() {
+		return new Parser<>(ParserImpl.getRowF());
+	}
+
+	public static Parser<Integer> getColumn() {
+		return new Parser<>(ParserImpl.getColumnF());
+	}
+
+	public static Parser<Integer> getOffset() {
+		return new Parser<>(ParserImpl.getOffsetF());
+	}
+
+	public static Parser<String> getSource() {
+		return new Parser<>(ParserImpl.getSourceF());
+	}
+
+	public static Parser<Integer> getIndent() {
+		return new Parser<>(ParserImpl.getIndentF());
+	}
+
+	public static <T> Parser<T> withIndent(final int newIndent, final Parser<T> parser) {
+		return new Parser<>(ParserImpl.withIndent(newIndent, parser));
 	}
 }

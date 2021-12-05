@@ -1,6 +1,7 @@
 package com.github.sproutparser.common;
 
 import com.github.sproutparser.common.internal.Bag;
+import com.github.sproutparser.common.internal.Empty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,17 +29,13 @@ public final class ParserImpl {
 		final AbstractParser<C, X, T> parser,
 		final String source
 	) {
-
 		final Function<State<C>, PStep<C, X, T>> parse = parser.parse();
-
 		final PStep<C, X, T> pStep = parse.apply(new State<>(source, 0, 1, List.of(), 1, 1));
 
 		if (pStep instanceof Good<C, X, T> good) {
 			return new Ok<>(good.value());
-		} else { // Must be an instance of bad
-			final Bad<C, X, T> bad = (Bad<C, X, T>) pStep;
-
-			return new Err<>(Bag.bagToList(bad.bag(), io.vavr.collection.List.empty()).toJavaList());
+		} else {
+			return new Err<>(Bag.bagToList(pStep.asBad().bag(), io.vavr.collection.List.empty()).toJavaList());
 		}
 	}
 
@@ -83,15 +80,12 @@ public final class ParserImpl {
 		final Function<T, R> f,
 		final AbstractParser<C, X, T> parser
 	) {
-
 		return state -> {
-
 			final PStep<C, X, T> result = parser.parse().apply(state);
-
 			if (result instanceof Good<C, X, T> good) {
 				return new Good<>(good.progress(), f.apply(good.value()), good.state());
 			} else { // Must be an instance of bad
-				final Bad<C, X, T> bad = (Bad<C, X, T>) result;
+				final Bad<C, X, T> bad = result.asBad();
 				return new Bad<>(bad.progress(), bad.bag());
 			}
 		};
@@ -115,19 +109,19 @@ public final class ParserImpl {
 		final AbstractParser<C, X, T2> parserB
 	) {
 		return state -> {
-
 			final PStep<C, X, T1> resultA = parserA.parse().apply(state);
 
 			if (resultA instanceof Bad<C, X, T1> badA) {
 				return new Bad<>(badA.progress(), badA.bag());
+
 			} else { // Must be an instance of good
-				final Good<C, X, T1> goodA = (Good<C, X, T1>) resultA;
+				final Good<C, X, T1> goodA = resultA.asGood();
 				final PStep<C, X, T2> resultB = parserB.parse().apply(goodA.state());
 
 				if (resultB instanceof Bad<C, X, T2> badB) {
 					return new Bad<>(goodA.progress() || badB.progress(), badB.bag());
 				} else { // Must be an instance of good
-					final Good<C, X, T2> goodB = (Good<C, X, T2>) resultB;
+					final Good<C, X, T2> goodB = resultB.asGood();
 					return new Good<>(goodA.progress() || goodB.progress(), f.apply(goodA.value(), goodB.value()), goodB.state());
 				}
 			}
@@ -156,14 +150,14 @@ public final class ParserImpl {
 			if (resultA instanceof Bad<C, X, T> badA) {
 				return new Bad<>(badA.progress(), badA.bag());
 			} else {
-				final Good<C, X, T> goodA = (Good<C, X, T>) resultA;
+				final Good<C, X, T> goodA = resultA.asGood();
 				final AbstractParser<C, X, R> parserB = callback.apply(goodA.value());
 				final PStep<C, X, R> resultB = parserB.parse().apply(goodA.state());
 
 				if (resultB instanceof Bad<C, X, R> badB) {
 					return new Bad<>(goodA.progress() || badB.progress(), badB.bag());
 				} else {
-					final Good<C, X, R> goodB = (Good<C, X, R>) resultB;
+					final Good<C, X, R> goodB = resultB.asGood();
 					return new Good<>(goodA.progress() || goodB.progress(), goodB.value(), goodB.state());
 				}
 			}
@@ -194,7 +188,7 @@ public final class ParserImpl {
 		return state -> {
 
 			final int[] triple
-				= ParserImpl.isSubString(token.string(), state.offset(), state.row(), state.column(), state.source());
+				= isSubString(token.string(), state.offset(), state.row(), state.column(), state.source());
 
 			final int newOffset = triple[0];
 			final int newRow = triple[1];
@@ -265,13 +259,13 @@ public final class ParserImpl {
 
 		return state -> {
 
-			final int[] triple = isSubString(token.string(), state.offset(), state.row(), state.column(), state.source());
+			final int[] newPosition = isSubString(kwd, state.offset(), state.row(), state.column(), state.source());
 
-			final int newOffset = triple[0];
-			final int newRow = triple[1];
-			final int newCol = triple[2];
+			final int newOffset = newPosition[0];
+			final int newRow = newPosition[1];
+			final int newCol = newPosition[2];
 
-			if (newOffset == -1 || 0 <= ParserImpl.isSubChar(c -> Character.isLetterOrDigit(c) || c == '_', newOffset, state.source())) {
+			if (newOffset == -1 || 0 <= isSubChar(c -> Character.isLetterOrDigit(c) || c == '_', newOffset, state.source())) {
 				return new Bad<>(false, Bag.fromState(state, expecting));
 			} else {
 				return new Good<>(progress, null,
@@ -279,7 +273,6 @@ public final class ParserImpl {
 			}
 		};
 	}
-
 
 	/**
 	 * This is how you mark that you are in a certain context.
@@ -317,6 +310,28 @@ public final class ParserImpl {
 	}
 
 	/**
+	 * @param isGood the predicate that tests if the character can be chomped
+	 * @param expecting the problem to report if the character cannot be chomped
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return a {@link Function} that implements chompIf parsing
+	 */
+	public static <C, X> Function<State<C>, PStep<C, X, Void>> chompIfF(final Predicate<Integer> isGood, final X expecting) {
+
+		return s -> {
+			final int newOffset = isSubChar(isGood, s.offset(), s.source());
+
+			if (newOffset == -1) {
+				return new Bad<>(false, Bag.fromState(s, expecting));
+			} else if (newOffset == -2) {
+				return new Good<>(true, null, new State<C>(s.source(), s.offset(), s.indent(), s.context(), s.row() + 1, 1));
+			} else {
+				return new Good<>(true, null, new State<C>(s.source(), newOffset, s.indent(), s.context(), s.row(), s.column()  + 1));
+			}
+		};
+	}
+
+	/**
 	 * Consumes characters while a predicate is satisfied.
 	 *
 	 * @param isGood a predicate that tests if the current character should be consumed
@@ -324,7 +339,7 @@ public final class ParserImpl {
 	 * @param <X> the problem type
 	 * @return a function that implements parsing while a predicate is satisfied.
 	 */
-	private static <C, X> Function<State<C>, PStep<C, X, Void>> chompWhile(final Predicate<Integer> isGood) {
+	public static <C, X> Function<State<C>, PStep<C, X, Void>> chompWhile(final Predicate<Integer> isGood) {
 		return s -> chompWhileHelp(isGood, s.offset(), s.row(), s.column(), s);
 	}
 
@@ -384,6 +399,37 @@ public final class ParserImpl {
 		};
 	}
 
+	/**
+	 * @param token the {@link Token} that defines the {@link String} that causes parsing to stop,
+	 *              and the problem to report if the {@link String} is not encountered.
+	 *
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return a {@link Function} that implements chomping until a specified {@link String} is encountered
+	 */
+	public static <C, X> Function<State<C>, PStep<C, X, Void>> chompUntilF(final Token<X> token) {
+
+		return s -> {
+			final int[] ints = findSubString(token.string(), s.offset(), s.row(), s.column(), s.source());
+			final int newOffset = ints[0];
+			final int newRow = ints[1];
+			final int newColumn = ints[2];
+
+			if (newOffset == -1) {
+				return new Bad<>(
+					false,
+					Bag.fromInfo(newRow, newColumn, token.expecting(), s.context())
+				);
+			} else {
+				return new Good<>(
+					s.offset() < newOffset,
+					null,
+					new State<>(s.source(), newOffset, s.indent(), s.context(), newRow, newColumn)
+				);
+			}
+		};
+	}
+
 	static int[] findSubString(
 		final String shorterString,
 		final int initialOffset,
@@ -427,15 +473,138 @@ public final class ParserImpl {
 	 * @return a function that implements parsing a value, then passes that value and the parsed source that produced
 	 *         that value into a function that produces a new type of value.
 	 */
-	public static <C, X, T1, T2> Function<State<C>, PStep<C, X, T2>> mapChompedStringF(final BiFunction<String, T1, T2> f, final AbstractParser<C, X, T1> parser) {
+	public static <C, X, T1, T2> Function<State<C>, PStep<C, X, T2>> mapChompedStringF(
+		final BiFunction<String, T1, T2> f,
+		final AbstractParser<C, X, T1> parser
+	) {
 
 		return s -> {
 			final PStep<C, X, T1> step = parser.parse().apply(s);
 			if (step instanceof Bad<C, X, T1> bad) {
-				return new Bad(bad.progress(), bad.bag());
+				return new Bad<>(bad.progress(), bad.bag());
 			} else {
-				final Good<C, X, T1> good = (Good<C, X, T1>) step;
+				final Good<C, X, T1> good = step.asGood();
 				return new Good<>(good.progress(), f.apply(s.source().substring(s.offset(), good.state().offset()), good.value()), good.state());
+			}
+		};
+	}
+
+	/**
+	 * Parse multi line comments.
+	 *
+	 * @param open the {@link Token} describing the string that starts a multiline comment
+	 * @param close the {@link Token} describing the string that ends a multiline comment
+	 * @param nestable indicates if comments can be nested
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return a {@link Function} that implements parsing of, possibly nested, multiline comments.
+	 */
+	public static <C, X> Function<State<C>, PStep<C, X, Void>> multiComment(final Token<X> open, final Token<X> close, final Nestable nestable) {
+
+		return Nestable.NOT_NESTABLE == nestable
+				? ignoreF(new AbstractParser<>(tokenF(open)) { }, new AbstractParser<>(chompUntilF(close)) { })
+				: nestableComment(open, close);
+	}
+
+	private static <C, X> Function<State<C>, PStep<C, X, Void>> nestableComment(final Token<X> open, final Token<X> close) {
+
+		final String oStr = open.string();
+		final X oProblem = open.expecting();
+		final String cStr = close.string();
+		final X cProblem = close.expecting();
+
+		if (oStr.isEmpty()) {
+			return problemF(cProblem);
+		} else {
+			final int openChar = oStr.codePointAt(0);
+			if (cStr.isEmpty()) {
+				return problemF(cProblem);
+			} else {
+				final int closeChar = cStr.codePointAt(0);
+				final Predicate<Integer> isNotRelevant = character -> character != openChar && character != closeChar;
+				final AbstractParser<C, X, Void> chompOpen = new AbstractParser<>(tokenF(open)) { };
+				final AbstractParser<C, X, Void> closeToken = new AbstractParser<>(tokenF(close)) { };
+
+				return ignoreF(chompOpen, nestableHelp(isNotRelevant, chompOpen, closeToken, cProblem, 1));
+			}
+		}
+	}
+
+	private static <C, X> AbstractParser<C, X, Void> nestableHelp(
+		final Predicate<Integer> isNotRelevent,
+		final AbstractParser<C, X, Void> open,
+		final AbstractParser<C, X, Void> close,
+		final X expectingClose,
+		final int nestLevel
+	) {
+		return null;
+	}
+
+	/**
+	 * This {@link Function} will keep trying parsers until {@code oneOf} them starts chomping characters. Once a path
+	 * is chosen, it does not come back and try the others.
+	 *
+	 * @param parsers the parsers to try
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @param <T> the value type
+	 * @return a {@link Function} that implements trying parsers until one of them starts chomping
+	 */
+	public static <C, X, T> Function<State<C>, PStep<C, X, T>> oneOfF(final List<? extends AbstractParser<C, X, T>> parsers) {
+		return s -> oneOfHelp(s, new Empty<>(), io.vavr.collection.List.ofAll(parsers));
+	}
+
+	private static <C, X, T> PStep<C, X, T> oneOfHelp(
+		final State<C> s,
+		final Bag<C, X> bag,
+		final io.vavr.collection.List<? extends AbstractParser<C, X, T>> parsers
+	) {
+/*      // Original recursive implementation
+		if(parsers.isEmpty()) {
+			return new Bad<>(false, bag);
+		} else {
+			final PStep<C, X, T> result = parsers.head().parse().apply(s);
+
+			if(result instanceof Good<C, X, T> good) {
+				return good;
+			} else {
+				final Bad<C, X, T> bad = result.asBad();
+				if(bad.progress()) {
+					return bad;
+				} else {
+					return oneOfHelp(s, new Append<>(bag, bad.bag()), parsers.tail());
+				}
+			}
+		}*/
+		@Mutable io.vavr.collection.List<? extends AbstractParser<C, X, T>> remaining = parsers;
+
+		while (!remaining.isEmpty()) {
+
+			final PStep<C, X, T> result = remaining.head().parse().apply(s);
+
+			if (result instanceof Good<C, X, T> good) {
+				return good;
+			} else {
+				if (result.asBad().progress()) {
+					return result.asBad();
+				} else {
+					remaining = remaining.tail();
+				}
+			}
+		}
+
+		return new Bad<>(false, bag);
+	}
+
+	public static <C, X, T> Function<State<C>, PStep<C, X, T>> backtrackableF(final AbstractParser<C, X, T> parser) {
+		return s -> {
+			final PStep<C, X, T> result = parser.parse().apply(s);
+
+			if (result instanceof Bad<C, X, T> bad) {
+				return new Bad<>(false, bad.bag());
+			} else {
+				final Good<C, X, T> good = result.asGood();
+				return new Good<>(false, good.value(), good.state());
 			}
 		};
 	}
@@ -492,7 +661,6 @@ public final class ParserImpl {
 		@Mutable int offset = initialOffset;
 		@Mutable int row = initialRow;
 		@Mutable int column = initialColumn;
-
 		@Mutable int newOffset = ParserImpl.isSubChar(isGood, offset, source);
 
 		while (newOffset != -1) {
@@ -559,6 +727,49 @@ public final class ParserImpl {
 					consumeBase(decimalBase, state.offset(), state.source()), state);
 			}
 		};
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, Position>> getPositionF() {
+		return s -> new Good<>(false, new Position(s.row(), s.column()), s);
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getRowF() {
+		return s -> new Good<>(false, s.row(), s);
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getColumnF() {
+		return s -> new Good<>(false, s.column(), s);
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getOffsetF() {
+		return s -> new Good<>(false, s.offset(), s);
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, String>> getSourceF() {
+		return s -> new Good<>(false, s.source(), s);
+	}
+
+	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getIndentF() {
+		return s -> new Good<>(false, s.indent(), s);
+	}
+
+	public static <C, X, T> Function<State<C>, PStep<C, X, T>> withIndent(
+		final int newIndent,
+		final AbstractParser<C, X, T> parser
+	) {
+		return s -> {
+			final PStep<C, X, T> result = parser.parse().apply(changeIndent(newIndent, s));
+
+			if(result instanceof Good<C, X, T> good) {
+				return new Good<>(good.progress(), good.value(), changeIndent(newIndent, good.state()));
+			} else {
+				return result.asBad();
+			}
+		};
+	}
+
+	private static  <C> State<C> changeIndent(final int newIndent, final State<C> state) {
+		return new State<>(state.source(), state.offset(), newIndent, state.context(), state.row(), state.column());
 	}
 
 	static int[] consumeBase(final int base, final int initialOffset, final String string) {
