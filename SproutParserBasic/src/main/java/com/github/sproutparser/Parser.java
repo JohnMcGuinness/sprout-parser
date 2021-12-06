@@ -323,6 +323,13 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 		return new Parser<>(ParserImpl.variableF(start, inner, reserved, Problem.EXPECTING_VARIABLE));
 	}
 
+	/**
+	 * @param keep
+	 * @param ignore
+	 * @param <T1>
+	 * @param <T2>
+	 * @return a {@link Parser} that ignores the result of its second argument
+	 */
 	public static <T1, T2> Parser<T1> ignore(final Parser<T1> keep, final Parser<T2> ignore) {
 		return new Parser<>(ParserImpl.ignoreF(keep, ignore));
 	}
@@ -358,7 +365,7 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * @param parser
 	 * @param <T1>
 	 * @param <T2>
-	 * @return
+	 * @return a {@link Parser} that transforms the output of {@code parser} along with the source to produce new result
 	 */
 	public static <T1, T2> Parser<T2> mapChompedString(final BiFunction<String, T1, T2> f, final Parser<T1> parser) {
 		return new Parser<>(ParserImpl.mapChompedStringF(f, parser));
