@@ -505,22 +505,47 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 		return ignore(token(start), chompUntilEndOr("\n"));
 	}
 
+	/**
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @return an {@link AdvancedParser} that returns the current {@link Position}
+	 */
 	public static <C, X> AdvancedParser<C, X, Position> getPosition() {
 		return new AdvancedParser<>(ParserImpl.getPositionF());
 	}
 
+	/**
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @return an {@link AdvancedParser} that returns the current row
+	 */
 	public static <C, X> AdvancedParser<C, X, Integer> getRow() {
 		return new AdvancedParser<>(ParserImpl.getRowF());
 	}
 
+	/**
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @return an {@link AdvancedParser} that returns the current column
+	 */
 	public static <C, X> AdvancedParser<C, X, Integer> getColumn() {
 		return new AdvancedParser<>(ParserImpl.getColumnF());
 	}
 
+	/**
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @return an {@link AdvancedParser} that returns the current offset
+	 */
 	public static <C, X> AdvancedParser<C, X, Integer> getOffset() {
 		return new AdvancedParser<>(ParserImpl.getOffsetF());
 	}
 
+	/**
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @return an {@link AdvancedParser} that returns the entire source
+	 */
 	public static <C, X> AdvancedParser<C, X, String> getSource() {
 		return new AdvancedParser<>(ParserImpl.getSourceF());
 	}
