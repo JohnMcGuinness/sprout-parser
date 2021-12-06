@@ -687,9 +687,9 @@ public final class ParserImpl {
 	 * @param floatingPoint
 	 * @param invalid
 	 * @param expecting
-	 * @param <C>
-	 * @param <X>
-	 * @param <T>
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @param <T> the value type
 	 * @return a function that implements number parsing
 	 */
 	public static <C, X, T> Function<State<C>, PStep<C, X, T>> numberF(
@@ -729,30 +729,68 @@ public final class ParserImpl {
 		};
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the current position
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, Position>> getPositionF() {
 		return s -> new Good<>(false, new Position(s.row(), s.column()), s);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the current row
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getRowF() {
 		return s -> new Good<>(false, s.row(), s);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the current column
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getColumnF() {
 		return s -> new Good<>(false, s.column(), s);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the current offset
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getOffsetF() {
 		return s -> new Good<>(false, s.offset(), s);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the entire source
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, String>> getSourceF() {
 		return s -> new Good<>(false, s.source(), s);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @return the current indentation
+	 */
 	public static <C, X> Function<State<C>, PStep<C, X, Integer>> getIndentF() {
 		return s -> new Good<>(false, s.indent(), s);
 	}
 
+	/**
+	 * @param newIndent
+	 * @param parser
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @param <T> the value type
+	 * @return a {@link Function} that implements parsing indentation
+	 */
 	public static <C, X, T> Function<State<C>, PStep<C, X, T>> withIndent(
 		final int newIndent,
 		final AbstractParser<C, X, T> parser
@@ -760,7 +798,7 @@ public final class ParserImpl {
 		return s -> {
 			final PStep<C, X, T> result = parser.parse().apply(changeIndent(newIndent, s));
 
-			if(result instanceof Good<C, X, T> good) {
+			if (result instanceof Good<C, X, T> good) {
 				return new Good<>(good.progress(), good.value(), changeIndent(newIndent, good.state()));
 			} else {
 				return result.asBad();
