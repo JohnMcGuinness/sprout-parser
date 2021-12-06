@@ -480,6 +480,8 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 	 * Chomp until you see a certain string or until you run out of characters to chomp.
 	 *
 	 * @param str the {@link String} that causes parsing to stop.
+	 * @param <C> context type
+	 * @param <X> problem type
 	 * @return an {@link AdvancedParser} that chomps until you see a certain string or until you run out of characters
 	 *         to chomp.
 	 */
