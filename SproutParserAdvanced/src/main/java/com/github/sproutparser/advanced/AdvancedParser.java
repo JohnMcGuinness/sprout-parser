@@ -182,6 +182,13 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 		return new AdvancedParser<>(ParserImpl.oneOfF(List.of(parsers)));
 	}
 
+	/**
+	 * @param parser
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @param <T> value type
+	 * @return an {@link AdvancedParser} that makes {@code parser} backtrackable
+	 */
 	public static <C, X, T> AdvancedParser<C, X, T> bracktrackable(final AdvancedParser<C, X, T> parser) {
 		return new AdvancedParser<>(ParserImpl.backtrackableF(parser));
 	}
@@ -456,10 +463,26 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 		return new AdvancedParser<>(ParserImpl.mapChompedStringF(f, parser));
 	}
 
+	/**
+	 * Extracts that part of the input source that was parsed by {@code parser}.
+	 *
+	 * @param parser
+	 * @param <C> context type
+	 * @param <X> problem type
+	 * @param <T> value type
+	 * @return an {@link AdvancedParser} that extracts the source parsed by {@code parser}
+	 */
 	public static <C, X, T> AdvancedParser<C, X, String> getChompedString(final AdvancedParser<C, X, T> parser) {
 		return mapChompedString((a, b) -> a, parser);
 	}
 
+	/**
+	 * Chomp until you see a certain string or until you run out of characters to chomp.
+	 *
+	 * @param str the {@link String} that causes parsing to stop.
+	 * @return an {@link AdvancedParser} that chomps until you see a certain string or until you run out of characters
+	 *         to chomp.
+	 */
 	public static <C, X> AdvancedParser<C, X, Void> chompUntilEndOr(final String str) {
 		return new AdvancedParser<>(ParserImpl.chompUntilEndOrF(str));
 	}
@@ -489,6 +512,14 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 		return new AdvancedParser<>(ParserImpl.chompWhile(isGood));
 	}
 
+	/**
+	 * Chomp until you see a certain string.
+	 *
+	 * @param token the {@link Token} that will cause parsing to stop
+	 * @param <C>
+	 * @param <X>
+	 * @return an {@link AdvancedParser} that chomps until it encounters a given {@link Token}
+	 */
 	public static <C, X> AdvancedParser<C, X, Void> chompUntil(final Token<X> token) {
 		return new AdvancedParser<>(ParserImpl.chompUntilF(token));
 	}

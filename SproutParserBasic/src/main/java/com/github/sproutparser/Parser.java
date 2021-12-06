@@ -233,10 +233,9 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	}
 
 	/**
-	 *
 	 * @param parser
 	 * @param <T> the type of the result of successful parsing
-	 * @return a
+	 * @return a {@link Parser} that makes {@code parser} backtrackable
 	 */
 	public static <T> Parser<T> backtrackable(final Parser<T> parser) {
 		return new Parser<>(ParserImpl.backtrackableF(parser));
