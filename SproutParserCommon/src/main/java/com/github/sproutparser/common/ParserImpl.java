@@ -597,6 +597,7 @@ public final class ParserImpl {
 	}
 
 	/**
+	 * @param parser the parser to make backtrackable
 	 * @param <C> the context type
 	 * @param <X> the problem type
 	 * @param <T> the value type
