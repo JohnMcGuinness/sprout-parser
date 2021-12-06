@@ -596,6 +596,12 @@ public final class ParserImpl {
 		return new Bad<>(false, bag);
 	}
 
+	/**
+	 * @param <C> the context type
+	 * @param <X> the problem type
+	 * @param <T> the value type
+	 * @return a {@link Function} that implements a backtracking parser
+	 */
 	public static <C, X, T> Function<State<C>, PStep<C, X, T>> backtrackableF(final AbstractParser<C, X, T> parser) {
 		return s -> {
 			final PStep<C, X, T> result = parser.parse().apply(s);
