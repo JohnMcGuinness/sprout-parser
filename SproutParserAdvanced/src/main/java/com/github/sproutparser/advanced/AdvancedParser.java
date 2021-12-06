@@ -96,8 +96,8 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 	 *
 	 * @param keep
 	 * @param ignore
-	 * @param <C>
-	 * @param <X>
+	 * @param <C> context type
+	 * @param <X> problem type
 	 * @param <T1>
 	 * @param <T2>
 	 * @return a Parser that ignores the result of it's second argument.
@@ -518,8 +518,8 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 	 * Chomp until you see a certain string.
 	 *
 	 * @param token the {@link Token} that will cause parsing to stop
-	 * @param <C>
-	 * @param <X>
+	 * @param <C> context type
+	 * @param <X> problem type
 	 * @return an {@link AdvancedParser} that chomps until it encounters a given {@link Token}
 	 */
 	public static <C, X> AdvancedParser<C, X, Void> chompUntil(final Token<X> token) {
@@ -530,8 +530,8 @@ public final class AdvancedParser<C, X, T> extends AbstractParser<C, X, T> {
 	 * Parse single-line comments.
 	 *
 	 * @param start
-	 * @param <C>
-	 * @param <X>
+	 * @param <C> context type
+	 * @param <X> problem type
 	 * @return an {@link AdvancedParser} that parses single line comments
 	 */
 	public static <C, X> AdvancedParser<C, X, Void> lineComment(final Token<X> start) {
