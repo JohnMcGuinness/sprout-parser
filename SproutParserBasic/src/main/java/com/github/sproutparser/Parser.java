@@ -405,30 +405,54 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 		return new Parser<>(ParserImpl.chompUntilF(toToken(str, Problem.expecting(str))));
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the current position
+	 */
 	public static Parser<Position> getPosition() {
 		return new Parser<>(ParserImpl.getPositionF());
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the current row
+	 */
 	public static Parser<Integer> getRow() {
 		return new Parser<>(ParserImpl.getRowF());
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the current column
+	 */
 	public static Parser<Integer> getColumn() {
 		return new Parser<>(ParserImpl.getColumnF());
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the current offset
+	 */
 	public static Parser<Integer> getOffset() {
 		return new Parser<>(ParserImpl.getOffsetF());
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the entire source
+	 */
 	public static Parser<String> getSource() {
 		return new Parser<>(ParserImpl.getSourceF());
 	}
 
+	/**
+	 * @return a {@link Parser} that returns the current indentation
+	 */
 	public static Parser<Integer> getIndent() {
 		return new Parser<>(ParserImpl.getIndentF());
 	}
 
+	/**
+	 * @param newIndent
+	 * @param parser
+	 * @param <T>
+	 * @return a {@link Parser} that expects the specified indent
+	 */
 	public static <T> Parser<T> withIndent(final int newIndent, final Parser<T> parser) {
 		return new Parser<>(ParserImpl.withIndent(newIndent, parser));
 	}
