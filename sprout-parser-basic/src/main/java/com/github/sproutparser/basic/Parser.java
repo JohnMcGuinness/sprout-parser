@@ -1,4 +1,14 @@
-package com.github.sproutparser;
+package com.github.sproutparser.basic;
+
+import com.github.sproutparser.AbstractParser;
+import com.github.sproutparser.Err;
+import com.github.sproutparser.Ok;
+import com.github.sproutparser.PStep;
+import com.github.sproutparser.ParserImpl;
+import com.github.sproutparser.Position;
+import com.github.sproutparser.Result;
+import com.github.sproutparser.State;
+import com.github.sproutparser.Token;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,23 +51,23 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 */
 	public static <T> Result<List<DeadEnd>, T> run(final Parser<T> parser, final String source) {
 
-		final Result<List<DeadEnd<Void, Problem>>, T> result = ParserImpl.run(parser, source);
+		final Result<List<com.github.sproutparser.DeadEnd<Void, Problem>>, T> result = ParserImpl.run(parser, source);
 
 		if (result instanceof Ok<?, T> right) {
 			return new Ok<>(right.value());
 		} else {
-			final List<DeadEnd<Void, Problem>> problems = result.error();
+			final List<com.github.sproutparser.DeadEnd<Void, Problem>> problems = result.error();
 
 			final List<DeadEnd> deadEnds = problems
-				.stream()
-				.map(Parser::problemToDeadEnd)
-				.collect(Collectors.toList());
+					.stream()
+					.map(Parser::problemToDeadEnd)
+					.collect(Collectors.toList());
 
 			return new Err<>(deadEnds);
 		}
 	}
 
-	private static DeadEnd problemToDeadEnd(final DeadEnd<Void, Problem> problem) {
+	private static DeadEnd problemToDeadEnd(final com.github.sproutparser.DeadEnd<Void, Problem> problem) {
 		return new DeadEnd(problem.row(), problem.column(), problem.problem());
 	}
 
@@ -265,20 +275,20 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * @return a {@link Parser} that can parse different kinds of numbers
 	 */
 	public static <T> Parser<T> number(
-		final Optional<Function<Integer, T>> integerFn,
-		final Optional<Function<Integer, T>> hexadecimalFn,
-		final Optional<Function<Integer, T>> octalFn,
-		final Optional<Function<Integer, T>> binaryFn,
-		final Optional<Function<Float, T>> floatFn) {
+			final Optional<Function<Integer, T>> integerFn,
+			final Optional<Function<Integer, T>> hexadecimalFn,
+			final Optional<Function<Integer, T>> octalFn,
+			final Optional<Function<Integer, T>> binaryFn,
+			final Optional<Function<Float, T>> floatFn) {
 
 		return new Parser<>(ParserImpl.numberF(
-			Result.fromOptional(Problem.EXPECTING_INT, integerFn),
-			Result.fromOptional(Problem.EXPECTING_HEX, hexadecimalFn),
-			Result.fromOptional(Problem.EXPECTING_OCTAL, octalFn),
-			Result.fromOptional(Problem.EXPECTING_BINARY, binaryFn),
-			Result.fromOptional(Problem.EXPECTING_FLOAT, floatFn),
-			Problem.EXPECTING_NUMBER,
-			Problem.EXPECTING_NUMBER)
+				Result.fromOptional(Problem.EXPECTING_INT, integerFn),
+				Result.fromOptional(Problem.EXPECTING_HEX, hexadecimalFn),
+				Result.fromOptional(Problem.EXPECTING_OCTAL, octalFn),
+				Result.fromOptional(Problem.EXPECTING_BINARY, binaryFn),
+				Result.fromOptional(Problem.EXPECTING_FLOAT, floatFn),
+				Problem.EXPECTING_NUMBER,
+				Problem.EXPECTING_NUMBER)
 		);
 	}
 
@@ -288,11 +298,11 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 */
 	public static Parser<Integer> integer() {
 		return number(
-			Optional.of(Function.identity()),
-			Optional.empty(),
-			Optional.empty(),
-			Optional.empty(),
-			Optional.empty()
+				Optional.of(Function.identity()),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty(),
+				Optional.empty()
 		);
 	}
 
@@ -305,9 +315,9 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * @return a {@link Parser} of variables
 	 */
 	public static Parser<String> variable(
-		final Predicate<Integer> start,
-	    final Predicate<Integer> inner,
-	    final Set<String> reserved
+			final Predicate<Integer> start,
+			final Predicate<Integer> inner,
+			final Set<String> reserved
 	) {
 		return new Parser<>(ParserImpl.variableF(start, inner, reserved, Problem.EXPECTING_VARIABLE));
 	}

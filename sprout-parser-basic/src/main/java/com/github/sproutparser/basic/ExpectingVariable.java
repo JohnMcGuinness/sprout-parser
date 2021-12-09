@@ -1,4 +1,4 @@
-package com.github.sproutparser;
+package com.github.sproutparser.basic;
 
 public record ExpectingVariable() implements Problem {
 }

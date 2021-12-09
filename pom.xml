@@ -9,9 +9,9 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>SproutParserCommon</module>
-        <module>SproutParserBasic</module>
-        <module>SproutParserAdvanced</module>
+        <module>sprout-parser-common</module>
+        <module>sprout-parser-basic</module>
+        <module>sprout-parser-advanced</module>
     </modules>
     <dependencies>
         <dependency>
