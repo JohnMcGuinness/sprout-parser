@@ -1,7 +1,7 @@
-package com.github.sproutparser;
+package com.github.sproutparser.common;
 
-import com.github.sproutparser.internal.Bag;
-import com.github.sproutparser.internal.Empty;
+import com.github.sproutparser.common.internal.Bag;
+import com.github.sproutparser.common.internal.Empty;
 
 import java.util.ArrayList;
 import java.util.List;

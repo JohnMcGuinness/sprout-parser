@@ -1,4 +1,4 @@
 module sproutparser.common {
 	requires io.vavr;
-	exports com.github.sproutparser to sproutparser.advanced, sproutparser.basic;
+	exports com.github.sproutparser.common to sproutparser.advanced, sproutparser.basic;
 }

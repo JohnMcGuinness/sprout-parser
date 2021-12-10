@@ -1,14 +1,14 @@
 package com.github.sproutparser.basic;
 
-import com.github.sproutparser.AbstractParser;
-import com.github.sproutparser.Err;
-import com.github.sproutparser.Ok;
-import com.github.sproutparser.PStep;
-import com.github.sproutparser.ParserImpl;
-import com.github.sproutparser.Position;
-import com.github.sproutparser.Result;
-import com.github.sproutparser.State;
-import com.github.sproutparser.Token;
+import com.github.sproutparser.common.AbstractParser;
+import com.github.sproutparser.common.Err;
+import com.github.sproutparser.common.Ok;
+import com.github.sproutparser.common.PStep;
+import com.github.sproutparser.common.ParserImpl;
+import com.github.sproutparser.common.Position;
+import com.github.sproutparser.common.Result;
+import com.github.sproutparser.common.State;
+import com.github.sproutparser.common.Token;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,12 +51,12 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 */
 	public static <T> Result<List<DeadEnd>, T> run(final Parser<T> parser, final String source) {
 
-		final Result<List<com.github.sproutparser.DeadEnd<Void, Problem>>, T> result = ParserImpl.run(parser, source);
+		final Result<List<com.github.sproutparser.common.DeadEnd<Void, Problem>>, T> result = ParserImpl.run(parser, source);
 
 		if (result instanceof Ok<?, T> right) {
 			return new Ok<>(right.value());
 		} else {
-			final List<com.github.sproutparser.DeadEnd<Void, Problem>> problems = result.error();
+			final List<com.github.sproutparser.common.DeadEnd<Void, Problem>> problems = result.error();
 
 			final List<DeadEnd> deadEnds = problems
 					.stream()
@@ -67,7 +67,7 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 		}
 	}
 
-	private static DeadEnd problemToDeadEnd(final com.github.sproutparser.DeadEnd<Void, Problem> problem) {
+	private static DeadEnd problemToDeadEnd(final com.github.sproutparser.common.DeadEnd<Void, Problem> problem) {
 		return new DeadEnd(problem.row(), problem.column(), problem.problem());
 	}
 
@@ -211,7 +211,7 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * @return a {@link Parser} that parses the given token
 	 */
 	public static Parser<Void> token(final String token) {
-		return new Parser<>(ParserImpl.tokenF(new Token<>(token, new Expecting(token))));
+		return new Parser<>(ParserImpl.tokenF(new com.github.sproutparser.common.Token<>(token, new Expecting(token))));
 	}
 
 	/**
@@ -229,7 +229,7 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 	 * @return a {@link Parser} that parses the given symbol
 	 */
 	public static Parser<Void> symbol(final String string) {
-		return new Parser<>(ParserImpl.tokenF(new Token<>(string, Problem.expectingSymbol(string))));
+		return new Parser<>(ParserImpl.tokenF(new com.github.sproutparser.common.Token<>(string, Problem.expectingSymbol(string))));
 	}
 
 	/**
@@ -352,7 +352,7 @@ public final class Parser<T> extends AbstractParser<Void, Problem, T> {
 		return new Parser<>(ParserImpl.chompUntilEndOrF(str));
 	}
 
-	private static Token<Problem> toToken(final String str, final Problem problem) {
+	private static com.github.sproutparser.common.Token<Problem> toToken(final String str, final Problem problem) {
 		return new Token<>(str, problem);
 	}
 

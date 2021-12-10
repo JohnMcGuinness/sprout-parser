@@ -1,13 +1,13 @@
-package com.github.sproutparser.advanced;
+package com.github.sproutparser.common.advanced;
 
-import com.github.sproutparser.AbstractParser;
-import com.github.sproutparser.DeadEnd;
-import com.github.sproutparser.PStep;
-import com.github.sproutparser.ParserImpl;
-import com.github.sproutparser.Position;
-import com.github.sproutparser.Result;
-import com.github.sproutparser.State;
-import com.github.sproutparser.Token;
+import com.github.sproutparser.common.AbstractParser;
+import com.github.sproutparser.common.DeadEnd;
+import com.github.sproutparser.common.PStep;
+import com.github.sproutparser.common.ParserImpl;
+import com.github.sproutparser.common.Position;
+import com.github.sproutparser.common.Result;
+import com.github.sproutparser.common.State;
+import com.github.sproutparser.common.Token;
 
 import java.util.List;
 import java.util.Set;

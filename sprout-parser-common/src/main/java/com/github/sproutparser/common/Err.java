@@ -1,4 +1,4 @@
-package com.github.sproutparser;
+package com.github.sproutparser.common;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;

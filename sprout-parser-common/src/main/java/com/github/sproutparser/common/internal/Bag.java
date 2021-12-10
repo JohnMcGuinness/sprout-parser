@@ -1,8 +1,8 @@
-package com.github.sproutparser.internal;
+package com.github.sproutparser.common.internal;
 
-import com.github.sproutparser.DeadEnd;
-import com.github.sproutparser.Located;
-import com.github.sproutparser.State;
+import com.github.sproutparser.common.DeadEnd;
+import com.github.sproutparser.common.Located;
+import com.github.sproutparser.common.State;
 
 import java.util.List;
 
